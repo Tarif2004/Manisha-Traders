@@ -1,6 +1,6 @@
 # 👗 Manisha Traders — Wholesale Dress Distribution & Business Management System
 
-A modern, full-stack **MERN** (MongoDB, Express.js, React, Node.js) business management platform designed for wholesale dress and apparel distribution. It connects distributors with retail boutique partners, manages warehouse inventory with automated stock tracking, facilitates order fulfillment pipelines, and provides executive sales analytics with role-based access control.
+A modern, enterprise-grade full-stack **MERN** (MongoDB, Express.js, React, Node.js) business management platform designed for wholesale dress and apparel distribution. It connects distributors with retail boutique partners, manages warehouse inventory with automated stock tracking, facilitates order fulfillment pipelines, provides executive sales analytics, and includes a built-in **Application Web Firewall (WAF)** and multi-tier security defenses.
 
 ---
 
@@ -12,7 +12,15 @@ A modern, full-stack **MERN** (MongoDB, Express.js, React, Node.js) business man
 - **Revenue Analytics**: Interactive sales trend charts powered by Recharts with daily and monthly volume comparisons.
 - **Business Policy Controls**: Global distributor settings, minimum wholesale order values, and tiered bulk discount thresholds.
 
-### 🛡️ Role-Based Access Control (RBAC) & Admin Sign-Up Workflow
+### 🛡️ Application Web Firewall (WAF) & Enterprise Security
+- **Built-in Application Firewall**: Intercepts requests to block automated attack scanners (`sqlmap`, `nikto`, `masscan`), sensitive file probes (`.env`, `.git`, `phpmyadmin`, `wp-admin`), path traversal attacks (`../`), and null-byte injections (`%00`).
+- **Anti-Brute-Force Rate Limiting**: Global traffic regulation (300 req / 15 min) with strict brute-force limits on authentication endpoints (15 req / 15 min).
+- **NoSQL Injection Sanitization**: Recursively purges MongoDB query operator injection keys (`$gt`, `$ne`, `$where`, etc.) and dot-notation tampering.
+- **HTTP Security Headers**: Powered by `helmet` to enforce `X-Frame-Options` (anti-clickjacking), `X-Content-Type-Options: nosniff`, and `Strict-Transport-Security`.
+- **Payload Capping & CORS Whitelisting**: Body payload capped at `20kb` to prevent memory exhaustion; strict origin whitelist matching `CLIENT_URL`.
+- **Centralized Safe Error Handler**: Shields database schema details and error stack traces in production.
+
+### 👥 Role-Based Access Control (RBAC) & Admin Sign-Up Workflow
 - **Three distinct user roles**: `Owner`, `Admin` (Staff), and `Customer` (Retail Boutique Partner).
 - **Public Admin Application**: Prospective staff can sign up via `/register?role=admin`. New accounts enter a `pending` state and cannot log in until approved.
 - **Staff Permission Governance**: The Owner can review pending staff applications, approve/reject them, and toggle granular permissions:
@@ -47,6 +55,7 @@ A modern, full-stack **MERN** (MongoDB, Express.js, React, Node.js) business man
 |---|---|
 | **Frontend** | React 19, Vite 8, React Router v7, Tailwind CSS v4, Lucide React, Recharts, Axios |
 | **Backend** | Node.js, Express.js (v5), Mongoose (v9), JSON Web Tokens (JWT), bcryptjs, CORS |
+| **Security & Firewall** | Helmet, Express-Rate-Limit, Custom WAF Middleware, NoSQL Injection Sanitizer |
 | **Database** | MongoDB (Local or MongoDB Atlas) |
 | **Tooling** | Dotenv, Nodemon, ESLint |
 
@@ -73,13 +82,19 @@ Manisha-Traders/
 ├── server/                     # Node.js + Express REST API Backend
 │   ├── config/                 # MongoDB database connection configuration
 │   ├── controllers/            # Auth, Admin, Product, Order, Analytics business logic
-│   ├── middleware/             # JWT verification & role-based route protection
+│   ├── middleware/             # Security & Protection Layer:
+│   │   ├── authMiddleware.js     # JWT token verification
+│   │   ├── roleMiddleware.js     # RBAC role & permission enforcement
+│   │   ├── firewallMiddleware.js # WAF (Scanner, probe, traversal, null-byte blocker)
+│   │   ├── rateLimiter.js        # DDoS & anti-brute-force rate limiters
+│   │   ├── sanitizeMiddleware.js # NoSQL injection recursive operator cleaner
+│   │   └── errorMiddleware.js    # Centralized safe error handler
 │   ├── models/                 # Mongoose schemas (User, Product, Order, InventoryTransaction, Settings)
 │   ├── routes/                 # API route declarations
 │   ├── scripts/                # Database seed scripts (createOwner.js)
 │   ├── .env.example            # Backend environment variable template
 │   ├── package.json
-│   └── server.js               # Express application entry point
+│   └── server.js               # Express entry point with hardened security layer
 │
 ├── .gitignore                  # Git ignore rules for secrets & build outputs
 └── README.md                   # Project documentation
@@ -150,7 +165,7 @@ cd Manisha-Traders
    # Or standard node
    npm start
    ```
-   *The server will run at `http://localhost:5000`.*
+   *The server will run with active firewall protection at `http://localhost:5000`.*
 
 ---
 
@@ -199,6 +214,50 @@ cd Manisha-Traders
 
 ---
 
+## 🛡️ Security Architecture & Web Application Firewall (WAF)
+
+The backend features a comprehensive multi-tier security pipeline executed on every incoming request:
+
+```
+Incoming Request
+      │
+      ▼
+[1. Helmet Security Headers]       → Injects X-Frame-Options, CSP, nosniff, HSTS
+      │
+      ▼
+[2. Application WAF Firewall]      → Blocks scanners (sqlmap), file probes (.env, .git), path traversal, null-bytes (403)
+      │
+      ▼
+[3. Traffic Rate Limiting]         → Global 300 req/15m; Auth 15 req/15m (429)
+      │
+      ▼
+[4. CORS Whitelisting]             → Restricts access strictly to CLIENT_URL
+      │
+      ▼
+[5. Payload Size Capping]          → Limits request bodies to 20KB (413)
+      │
+      ▼
+[6. NoSQL Injection Sanitizer]     → Purges '$' operators and dot-notation keys
+      │
+      ▼
+[7. JWT & RBAC Route Protection]   → Validates token & role permissions
+      │
+      ▼
+[8. Controller Business Logic]     → Processes request safely
+      │
+      ▼
+[9. Centralized Error Handler]     → Hides stack traces & database schema details
+```
+
+### Automated Security Checks Included:
+- **Sensitive Probe Blocker**: Requests to `/.env`, `/.git`, `/wp-admin`, `/phpmyadmin` return `403 Forbidden`.
+- **Scanner User-Agent Blocker**: Requests with `sqlmap`, `nikto`, `masscan` return `403 Forbidden`.
+- **Path Traversal Blocker**: Requests containing `../` or `%2e%2e%2f` return `403 Forbidden`.
+- **NoSQL Injection Neutralizer**: Payloads like `{"email": {"$gt": ""}}` are stripped of operator keys and safely rejected with `400 Bad Request`.
+- **Anti-Brute Force**: Repeated failed logins trigger automatic `429 Too Many Requests` cooling windows.
+
+---
+
 ## 📡 REST API Summary
 
 ### Authentication (`/api/auth`)
@@ -234,18 +293,6 @@ cd Manisha-Traders
 - `GET /api/analytics/sales` — Daily and monthly wholesale revenue trends
 - `GET /api/analytics/inventory` — Stock value, unit totals, and distribution
 - `GET /api/analytics/top-products` — Top-selling dress styles by volume and revenue
-
----
-
-## 🛡️ Security & Architecture Best Practices
-
-- **Strict Password Hashing**: Utilizes `bcryptjs` with salt factor 10.
-- **Stateless Authorization**: Protected routes leverage `jsonwebtoken` (JWT) with user ID and role claims validated on every request.
-- **Granular Route Middleware**:
-  - `authMiddleware`: Verifies token authenticity.
-  - `roleMiddleware`: Enforces `owner` vs `admin` vs `customer` hierarchy and individual permission flags.
-- **Inventory Concurrency Protection**: Stock quantities are decremented on order placement and safely credited back if cancelled.
-- **Isolated Environment Secrets**: All database URIs, signing keys, and ports are isolated in `.env` files and excluded from Git commits via `.gitignore`.
 
 ---
 
