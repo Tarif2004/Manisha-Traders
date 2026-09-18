@@ -206,8 +206,8 @@ cd Manisha-Traders
 | Field | Value |
 |---|---|
 | **Portal URL** | [http://localhost:5173/login](http://localhost:5173/login) |
-| **Email** | `owner@manishatraders.com` |
-| **Password** | `Sudipto@123` |
+| **Email** | `---------------------` |
+| **Password** | `----------------------` |
 | **Role** | `owner` (Full unrestricted privileges) |
 
 > ⚠️ **Security Notice**: Remember to update the `JWT_SECRET` and change the default owner password in production environments via the in-app **Settings** page or `.env` configuration.
