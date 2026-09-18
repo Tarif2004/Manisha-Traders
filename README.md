@@ -145,10 +145,10 @@ cd Manisha-Traders
    CLIENT_URL=http://localhost:5173
 
    # Default Owner Credentials (Used by seed script)
-   OWNER_NAME=Sudipto Das
-   OWNER_EMAIL=owner@manishatraders.com
-   OWNER_PHONE=9876543210
-   OWNER_PASSWORD=Sudipto@123
+   OWNER_NAME=-------------
+   OWNER_EMAIL=---------------
+   OWNER_PHONE=---------------
+   OWNER_PASSWORD=------------------
    ```
 
 5. **Seed the Owner Account**:
